@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/plugins/feature_navigator" >
+        <file>icons/feature_navigator_icon.png</file>
+		<file>icons/settings.png</file>
+		<file>icons/question_mark.png</file>
+    </qresource>
+</RCC>
