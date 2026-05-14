@@ -21,11 +21,17 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt
 from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QShortcut
 from qgis.PyQt.QtGui import QIcon, QKeySequence
-from qgis.core import QgsFeatureRequest, QgsMapLayerProxyModel, QgsProject
-from PyQt5.QtCore import QTimer
+from qgis.core import (
+    QgsFeatureRequest,
+    QgsMapLayer,
+    QgsMapLayerProxyModel,
+    QgsProject,
+    QgsWkbTypes,
+    QgsLayerTreeNode,
+)
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QTimer, QElapsedTimer
 # Initialize Qt resources from file resources.py
 from .resources import *
 
@@ -54,7 +60,7 @@ class FeatureNavigator:
         self.plugin_dir = os.path.dirname(__file__)
 
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale = QSettings().value("locale/userLocale", "en", type=str)[:2]
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -81,10 +87,16 @@ class FeatureNavigator:
         self.current_layer = None
         self.has_selected_feature = False
         self.ignore_selection_change = False
+        self.selected_features_only = False
+        self.selected_feature_ids_cache = []
 
         # Optional runtime objects
         self.timer = None
         self.spacebar_shortcut = None
+        
+        self.playback_interval_ms = 1000
+        self.remaining_interval_ms = None
+        self.playback_elapsed_timer = QElapsedTimer()
 
 
     # noinspection PyMethodMayBeStatic
@@ -274,10 +286,10 @@ class FeatureNavigator:
                 self.spacebar_shortcut.setEnabled(False)  # default until settings are loaded
 
                 # Setup timer
-                self.timer = QTimer()
-                interval = QSettings().value("FeatureNavigator/playbackInterval", 1000, type=int)
-                self.timer.setInterval(interval)
-                self.timer.timeout.connect(self.next_feature)
+                self.timer = QTimer(self.dockwidget)
+                self.playback_interval_ms = QSettings().value("FeatureNavigator/playbackInterval", 1000, type=int)
+                self.timer.setInterval(self.playback_interval_ms)
+                self.timer.timeout.connect(self.advance_auto_play)
 
                 # Setup default states
                 self.dockwidget.previousButton.setEnabled(False)
@@ -291,7 +303,17 @@ class FeatureNavigator:
                 
             # Show the dockwidget
             self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
-            self.dockwidget.errorLabel.setStyleSheet("color: red")
+            self.dockwidget.errorLabel.setStyleSheet(
+                """
+                QLabel {
+                    color: #b00020;
+                    background-color: rgba(255, 235, 238, 0.85);
+                    border: 1px solid rgba(176, 0, 32, 0.35);
+                    border-radius: 4px;
+                    padding: 3px 6px;
+                }
+                """
+            )
             self.dockwidget.errorLabel.setVisible(False)
             self.dockwidget.show()
             
@@ -303,12 +325,21 @@ class FeatureNavigator:
             spacebar_enabled = settings.value("FeatureNavigator/enableSpacebarPlayPause", False, type=bool)
             if self.spacebar_shortcut is not None:
                 self.spacebar_shortcut.setEnabled(spacebar_enabled)
-
             
+            self.selected_features_only = settings.value(
+                "FeatureNavigator/selectedFeaturesOnly",
+                False,
+                type=bool
+            )
 
             # ✅ Set active layer *and trigger logic*
             active_layer = self.iface.activeLayer()
-            if active_layer and active_layer.isValid() and active_layer.type() == active_layer.VectorLayer and active_layer.geometryType() >= 0:
+            if (
+                    active_layer
+                    and active_layer.isValid()
+                    and active_layer.type() == QgsMapLayer.VectorLayer
+                    and active_layer.geometryType() != QgsWkbTypes.NullGeometry
+                ):
                 self.dockwidget.mMapLayerComboBox.setLayer(active_layer)
                 self.reset_feature_index(active_layer)  # <-- this is essential
             else:
@@ -359,6 +390,12 @@ class FeatureNavigator:
         self.current_layer = layer
         self.connect_layer_selection_signal(self.current_layer)
         self.connect_layer_feature_signals(self.current_layer)
+
+        if self.selected_features_only:
+            self.selected_feature_ids_cache = list(self.current_layer.selectedFeatureIds())
+        else:
+            self.selected_feature_ids_cache = []
+
         self.has_selected_feature = False
         self.current_index = -1
         self.refresh_feature_list(preserve_position=False)
@@ -405,7 +442,12 @@ class FeatureNavigator:
         """Jump navigator index to a user-selected feature in the current layer."""
         if self.ignore_selection_change:
             return
-
+            
+        if self.selected_features_only and self.current_layer:
+            self.selected_feature_ids_cache = list(self.current_layer.selectedFeatureIds())
+            self.refresh_feature_list(preserve_position=False)
+            return
+            
         if not self.current_layer or not self.feature_ids:
             return
 
@@ -417,10 +459,10 @@ class FeatureNavigator:
         if fid is None:
             return
 
-        if fid not in self.feature_ids:
+        try:
+            self.current_index = self.feature_ids.index(fid)
+        except ValueError:
             return
-
-        self.current_index = self.feature_ids.index(fid)
         self.has_selected_feature = True
         self.dockwidget.selectedFeatureLabel.setVisible(True)
         self.update_selected_feature_label()
@@ -430,7 +472,15 @@ class FeatureNavigator:
         """Move backward in the feature list."""
         if not self.feature_ids:
             return
-        self.current_index = (self.current_index - 1 + len(self.feature_ids)) % len(self.feature_ids)
+
+        if not self.has_selected_feature:
+            # First previous click should go to the last feature.
+            self.current_index = len(self.feature_ids) - 1
+            self.has_selected_feature = True
+        else:
+            self.current_index = (self.current_index - 1) % len(self.feature_ids)
+
+        self.dockwidget.selectedFeatureLabel.setVisible(True)
         self.select_feature()
      
     def select_feature(self):
@@ -453,7 +503,7 @@ class FeatureNavigator:
                 visibility_changed = True
 
             parent = layer_node.parent()
-            while parent and parent.nodeType() == 0:  # 0 = Group
+            while parent and parent.nodeType() == QgsLayerTreeNode.NodeGroup:
                 if not parent.itemVisibilityChecked():
                     parent.setItemVisibilityChecked(True)
                     visibility_changed = True
@@ -476,12 +526,13 @@ class FeatureNavigator:
             self.ignore_selection_change = False
         
         # Zoom to feature with fixed buffer (e.g. 5 map units)
-        feature = next(self.current_layer.getFeatures(QgsFeatureRequest(fid)), None)
-        if feature:
+        request = QgsFeatureRequest().setFilterFid(fid)
+        feature = next(self.current_layer.getFeatures(request), None)
+        if feature and feature.isValid():
             geom = feature.geometry()
-            if geom:
+            if geom and not geom.isEmpty():
                 extent = geom.boundingBox()
-                buffer_size = QSettings().value("FeatureNavigator/zoomBuffer", 1, type=int)
+                buffer_size = QSettings().value("FeatureNavigator/zoomBuffer", 1.0, type=float)
 
                 # Manually expand the extent
                 buffered_extent = extent.buffered(buffer_size)
@@ -516,14 +567,23 @@ class FeatureNavigator:
             self.start_auto_play()
         
     def start_auto_play(self):
-        """Start automated navigation."""
+        """Start or resume automated navigation."""
         if not self.feature_ids:
             return
 
-        self.next_feature()  # First play goes to feature 1
+        if not self.has_selected_feature:
+            self.next_feature()
+            self.remaining_interval_ms = self.playback_interval_ms
+
+        interval_to_start = (
+            self.remaining_interval_ms
+            if self.remaining_interval_ms is not None
+            else self.playback_interval_ms
+        )
 
         if self.timer is not None:
-            self.timer.start()
+            self.timer.start(interval_to_start)
+            self.playback_elapsed_timer.restart()
 
         self.dockwidget.playButton.setEnabled(False)
         self.dockwidget.pauseButton.setEnabled(True)
@@ -533,8 +593,12 @@ class FeatureNavigator:
 
 
     def stop_auto_play(self):
-        """Stop automated navigation."""
-        if self.timer is not None:
+        """Pause automated navigation and preserve the remaining countdown."""
+        if self.timer is not None and self.timer.isActive():
+            elapsed_ms = self.playback_elapsed_timer.elapsed()
+            current_interval = self.timer.interval()
+
+            self.remaining_interval_ms = max(1, current_interval - elapsed_ms)
             self.timer.stop()
 
         self.dockwidget.playButton.setEnabled(True)
@@ -544,7 +608,16 @@ class FeatureNavigator:
         if len(self.feature_ids) > 1:
             self.dockwidget.nextButton.setEnabled(True)
             self.dockwidget.previousButton.setEnabled(True)
-            
+    
+    def advance_auto_play(self):
+        """Move to the next feature during autoplay and reset the countdown."""
+        self.remaining_interval_ms = self.playback_interval_ms
+        self.next_feature()
+
+        if self.timer is not None and self.timer.isActive():
+            self.timer.start(self.playback_interval_ms)
+            self.playback_elapsed_timer.restart()
+                
     def disable_navigation(self):
         """Disable all navigation-related controls."""
         self.dockwidget.previousButton.setEnabled(False)
@@ -561,26 +634,54 @@ class FeatureNavigator:
         current_interval_ms = settings.value("FeatureNavigator/playbackInterval", 1000, type=int)
         current_buffer_m = settings.value("FeatureNavigator/zoomBuffer", 1, type=int)
         current_spacebar_enabled = settings.value("FeatureNavigator/enableSpacebarPlayPause", False, type=bool)
+        current_selected_only = settings.value("FeatureNavigator/selectedFeaturesOnly", False, type=bool)
 
         dialog.speedSpinBox.setValue(current_interval_ms // 1000)
         dialog.bufferSpinBox.setValue(current_buffer_m)
         dialog.spacebarcheckBox.setChecked(current_spacebar_enabled)
+        dialog.selectedfeaturescheckBox.setChecked(current_selected_only)
 
         if dialog.exec_() == QDialog.Accepted:
             new_interval_ms = dialog.speedSpinBox.value() * 1000
             new_buffer_m = dialog.bufferSpinBox.value()
             new_spacebar_enabled = dialog.spacebarcheckBox.isChecked()
+            new_selected_only = dialog.selectedfeaturescheckBox.isChecked()
 
             settings.setValue("FeatureNavigator/playbackInterval", new_interval_ms)
             settings.setValue("FeatureNavigator/zoomBuffer", new_buffer_m)
             settings.setValue("FeatureNavigator/enableSpacebarPlayPause", new_spacebar_enabled)
+            settings.setValue("FeatureNavigator/selectedFeaturesOnly", new_selected_only)
+
+            old_selected_only = self.selected_features_only
+            was_playing = self.timer is not None and self.timer.isActive()
+
+            self.playback_interval_ms = new_interval_ms
+            self.remaining_interval_ms = new_interval_ms
 
             if self.timer is not None:
                 self.timer.setInterval(new_interval_ms)
 
             if self.spacebar_shortcut is not None:
                 self.spacebar_shortcut.setEnabled(new_spacebar_enabled)
-                
+
+            self.selected_features_only = new_selected_only
+
+            if self.selected_features_only and self.current_layer:
+                self.selected_feature_ids_cache = list(self.current_layer.selectedFeatureIds())
+            else:
+                self.selected_feature_ids_cache = []
+
+            # Preserve the current navigation position when changing simple settings
+            # such as zoom buffer, playback speed, or spacebar behaviour.
+            # If selected-features-only mode changed, rebuild from the new feature set.
+            selection_mode_changed = old_selected_only != new_selected_only
+
+            self.refresh_feature_list(
+                preserve_position=not selection_mode_changed
+            )
+
+            if was_playing and self.feature_ids:
+                self.timer.start()
                 
      # --------------------------------------------------------------------------
     # FEATURE LIST AUTO-REFRESH LOGIC
@@ -636,7 +737,10 @@ class FeatureNavigator:
         if preserve_position and old_feature_ids and 0 <= old_index < len(old_feature_ids):
             current_fid = old_feature_ids[old_index]
 
-        self.feature_ids = [f.id() for f in layer.getFeatures()]
+        if self.selected_features_only:
+            self.feature_ids = list(self.selected_feature_ids_cache)
+        else:
+            self.feature_ids = [f.id() for f in layer.getFeatures()]
         self.feature_ids.sort()
         num_features = len(self.feature_ids)
 
@@ -645,7 +749,10 @@ class FeatureNavigator:
             self.has_selected_feature = False
             self.dockwidget.selectedFeatureLabel.setVisible(False)
             self.dockwidget.selectedFeatureLabel.setText("")
-            self.dockwidget.errorLabel.setText("No features in currently selected layer")
+            if self.selected_features_only:
+                self.dockwidget.errorLabel.setText("No selected features in currently selected layer")
+            else:
+                self.dockwidget.errorLabel.setText("No features in currently selected layer")
             self.dockwidget.errorLabel.setVisible(True)
 
             if self.timer is not None and self.timer.isActive():

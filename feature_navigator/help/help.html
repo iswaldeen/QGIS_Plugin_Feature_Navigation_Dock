@@ -43,12 +43,6 @@
         text-align: center;
     }
 
-    code {
-        background: #eeeeee;
-        padding: 2px 5px;
-        border-radius: 4px;
-    }
-
     .inline-icon {
         width: 24px;
         height: 24px;
@@ -66,20 +60,29 @@
 
 <div class="section">
     <h2>Overview</h2>
+
     <p>
-        Feature Navigator is a QGIS 3.28.8 plugin designed to help users quickly
-        navigate through features in a selected vector layer.
+        Feature Navigator is a QGIS plugin that allows you to quickly move
+        through features in a vector layer.
+    </p>
+
+    <p>
+        The plugin supports manual navigation, autoplay navigation,
+        and navigation through selected features only.
     </p>
 </div>
 
 <div class="section">
     <h2>Main Features</h2>
+
     <ul>
         <li>Navigate forwards and backwards through features</li>
-        <li>Automatically zoom to selected features</li>
-        <li>Autoplay mode for sequential navigation</li>
+        <li>Automatically zoom to features</li>
+        <li>Autoplay feature navigation</li>
+        <li>Pause and resume autoplay</li>
         <li>Optional spacebar play/pause shortcut</li>
-        <li>Automatically updates when features are added or removed</li>
+        <li>Navigate only selected features</li>
+        <li>Automatically refresh when selections or features change</li>
     </ul>
 </div>
 
@@ -87,11 +90,25 @@
     <h2>How To Use</h2>
 
     <ol>
-        <li>Open the Feature Navigator plugin from the QGIS toolbar or Plugins menu.</li>
+        <li>Open Feature Navigator from the QGIS toolbar or Plugins menu.</li>
+
         <li>Select a vector layer using the layer dropdown.</li>
-        <li>Use the <strong>Next</strong> and <strong>Previous</strong> buttons to browse features.</li>
-        <li>Press <strong>Play</strong> to automatically move through features.</li>
-        <li>Press <strong>Pause</strong> to stop autoplay.</li>
+
+        <li>Use <strong>Next</strong> and <strong>Previous</strong> to move through features.</li>
+
+        <li>Press <strong>Play</strong> to start autoplay navigation.</li>
+
+        <li>Press <strong>Pause</strong> to pause autoplay.</li>
+
+        <li>
+            To navigate only selected features:
+            <ul>
+                <li>Select features in QGIS</li>
+                <li>Open the settings dialog</li>
+                <li>Enable <strong>Navigate through selected features only</strong></li>
+            </ul>
+        </li>
+
         <li>
             Press the
             <img src="img/question_mark.png" alt="Help Button" class="inline-icon">
@@ -106,51 +123,88 @@
         Settings
     </h2>
 
-    <p>The settings dialog allows you to configure:</p>
-
     <ul>
-        <li><strong>Playback Speed</strong> - Time interval between feature changes during autoplay</li>
-        <li><strong>Zoom Buffer</strong> - Additional map extent around selected features</li>
-        <li><strong>Spacebar Play/Pause</strong> - Enable or disable the spacebar shortcut</li>
+        <li>
+            <strong>Playback Speed</strong> -
+            Time between autoplay feature changes
+        </li>
+
+        <li>
+            <strong>Zoom Buffer</strong> -
+            Extra map space around selected features
+        </li>
+
+        <li>
+            <strong>Spacebar Play/Pause</strong> -
+            Enable or disable the spacebar shortcut
+        </li>
+
+        <li>
+            <strong>Navigate through selected features only</strong> -
+            Restrict navigation to selected features
+        </li>
     </ul>
 </div>
 
 <div class="section">
-    <h2>
-        <img src="img/question_mark.png" alt="Help Icon" class="help-icon">
-        Help Button
-    </h2>
+    <h2>Autoplay Behaviour</h2>
+
+    <ul>
+        <li>Autoplay moves through features automatically</li>
+
+        <li>Pause keeps the current playback countdown</li>
+
+        <li>Play resumes from the remaining countdown time</li>
+
+        <li>
+            Changing playback speed resets the countdown
+            using the new timer value
+        </li>
+    </ul>
+</div>
+
+<div class="section">
+    <h2>Selected Feature Navigation</h2>
 
     <p>
-        The help button opens the Feature Navigator documentation directly
-        from within the settings dialog.
+        When selected feature mode is enabled, the plugin only navigates
+        through currently selected features.
     </p>
 
     <p>
-        This provides quick access to:
+        Selections can be made:
     </p>
 
     <ul>
-        <li>Plugin usage instructions</li>
-        <li>Navigation controls</li>
-        <li>Autoplay settings</li>
-        <li>Feature behaviour notes</li>
+        <li>In the map canvas</li>
+        <li>From the attribute table</li>
+        <li>Using QGIS selection tools</li>
     </ul>
+
+    <p>
+        The feature list automatically refreshes when selections change.
+    </p>
 </div>
 
 <div class="section">
     <h2>Notes</h2>
+
     <ul>
-        <li>Only vector layers with geometry are supported.</li>
-        <li>The plugin automatically makes hidden layers visible when needed.</li>
-        <li>Feature navigation is based on QGIS feature IDs.</li>
+        <li>Only vector layers with geometry are supported</li>
+
+        <li>The plugin automatically makes hidden layers visible if needed</li>
+
+        <li>Navigation is based on QGIS feature IDs</li>
+
+        <li>Selected feature mode requires selected features in the active layer</li>
     </ul>
 </div>
 
 <div class="section">
     <h2>License</h2>
+
     <p>
-        This plugin is licensed under the Creative Commons Attribution-ShareAlike 3.0 licence (CC BY-SA).
+        This plugin is licensed under the GNU General Public License v2 or later.
     </p>
 </div>
 
