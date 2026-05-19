@@ -33,8 +33,7 @@ QDockWidget &gt; QWidget {
        <widget class="QLabel" name="errorLabel">
         <property name="font">
          <font>
-          <weight>75</weight>
-          <bold>true</bold>
+          <bold>false</bold>
          </font>
         </property>
         <property name="text">
@@ -98,7 +97,6 @@ QDockWidget &gt; QWidget {
         <property name="font">
          <font>
           <pointsize>7</pointsize>
-          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -119,20 +117,7 @@ QDockWidget &gt; QWidget {
          </sizepolicy>
         </property>
         <property name="styleSheet">
-         <string notr="true">QPushButton {
-    border-radius: 16px;
-    border: 1px solid gray;
-    background-color: white;
-    min-width: 32px;
-    max-width: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    font-weight: bold;
-}
-
-QPushButton:hover {
-    background-color: #e8f5e8;
-}</string>
+         <string notr="true"/>
         </property>
         <property name="text">
          <string/>
@@ -144,12 +129,12 @@ QPushButton:hover {
        </widget>
       </item>
       <item row="0" column="1">
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="centrallabel">
         <property name="font">
          <font>
           <pointsize>10</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
+          <bold>false</bold>
+          <kerning>true</kerning>
          </font>
         </property>
         <property name="text">

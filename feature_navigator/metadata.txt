@@ -5,8 +5,11 @@
 [general]
 name=Feature Navigator
 qgisMinimumVersion=3.0
+qgisMaximumVersion=4.99
+supportsQt6=True
+
 description=This plugin allows the user to navigate through features within a selected layer
-version=1.02
+version=1.1
 author=Isaac Thompson
 email=iswaldeen@outlook.com
 
@@ -20,7 +23,19 @@ repository=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=<strong>1.02</strong>
+changelog=<strong>1.1</strong>
+ - Added improved active layer initialization when opening the plugin
+ - Added improved layer signal reconnection logic
+ - Added improved feature lookup performance using feature ID index mapping
+ - Added improved compatibility handling for Qt5/Qt6 and QGIS 3/QGIS 4
+ - Added improved dark mode and light mode UI compatibility
+ - Added theme-aware help button icons and styling
+ - Added improved settings dialog styling and readability
+ - Improved map canvas refresh handling after visibility changes
+ - Improved feature selection synchronization logic
+ - Additional UI improvements, stability improvements, and bug fixes
+
+ <p><strong>1.02</strong>
  - Added selected-features-only navigation mode
  - Added automatic feature list refresh when selections or layer features change
  - Added automatic active layer detection and improved layer switching behaviour

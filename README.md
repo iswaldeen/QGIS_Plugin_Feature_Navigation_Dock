@@ -1,20 +1,41 @@
 # QGIS Plugin - Feature Navigator
 
-Feature Navigator is a QGIS 3.28.8 plugin that allows users to quickly navigate through features in a selected vector layer.
+Feature Navigator is a QGIS plugin for efficiently navigating through features in a selected vector layer.
 
-Features can be browsed manually using next/previous controls or automatically using autoplay mode. The plugin also supports navigation through selected features only, automatic zooming, and integrated help documentation.
+The plugin supports both manual and automatic feature navigation workflows, allowing users to move forwards and backwards through features, navigate selected features only, and automatically zoom to the active feature.
+
+Feature Navigator is designed for compatibility with modern QGIS versions and includes forward-compatible support for Qt6 and upcoming QGIS 4.x environments.
 
 <img src="feature_navigator/icons/feature_navigator_icon.png" width="100" height="100">
 
 ## Features
 
-- Navigate forwards and backwards through layer features
-- Navigate through selected features only
-- Automatically zoom to selected features
-- Autoplay mode for sequential feature navigation
-- Spacebar play/pause shortcut support
-- Automatically updates when features are added or removed
-- Integrated help documentation
+* Navigate forwards and backwards through layer features
+* Navigate through selected features only
+* Automatically zoom to active features
+* Autoplay mode for sequential feature navigation
+* Spacebar play/pause shortcut support
+* Automatically updates when features are added or removed
+* Integrated help documentation
+* Theme-aware UI support for both light and dark QGIS themes
+* Modernized PyQt / Qt compatibility handling
+* Improved robustness for layer and feature state changes
+* Forward-compatible design for:
+
+  * QGIS 3.x
+  * QGIS 4.x
+  * Qt5
+  * Qt6
+
+## Compatibility
+
+Feature Navigator is actively developed and tested for:
+
+* QGIS 3.28+
+* PyQt5 / Qt5
+* Forward compatibility with Qt6 and QGIS 4.x APIs where possible
+
+The plugin avoids deprecated Qt and QGIS API usage where practical to support long-term maintainability.
 
 ## License
 

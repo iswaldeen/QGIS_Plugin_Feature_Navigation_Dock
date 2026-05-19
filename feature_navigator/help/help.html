@@ -83,6 +83,7 @@
         <li>Optional spacebar play/pause shortcut</li>
         <li>Navigate only selected features</li>
         <li>Automatically refresh when selections or features change</li>
+		<li>Automatically turns on hidden layers when navigation starts</li>
     </ul>
 </div>
 
@@ -108,6 +109,11 @@
                 <li>Enable <strong>Navigate through selected features only</strong></li>
             </ul>
         </li>
+		
+		<li>
+			If the selected layer is hidden, the plugin will turn it on automatically
+			when you press <strong>Next</strong> or <strong>Play</strong>.
+		</li>
 
         <li>
             Press the
@@ -192,7 +198,10 @@
     <ul>
         <li>Only vector layers with geometry are supported</li>
 
-        <li>The plugin automatically makes hidden layers visible if needed</li>
+        <li>
+			If a selected layer is hidden, the plugin turns it on and shows a message
+			to let you know.
+		</li>
 
         <li>Navigation is based on QGIS feature IDs</li>
 

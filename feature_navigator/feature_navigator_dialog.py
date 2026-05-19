@@ -9,7 +9,7 @@
         begin                : 2025-06-24
         git sha              : $Format:%H$
         copyright            : (C) 2025 by Isaac Thompson
-        email                : ithompson@pre-construct.com
+        email                : iswaldeen@outlook.com
  ***************************************************************************/
 
 /***************************************************************************
@@ -25,9 +25,7 @@
 import os
 import webbrowser
 
-from qgis.PyQt import uic
-from qgis.PyQt import QtWidgets
-from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt import QtGui, QtWidgets, uic
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -40,12 +38,109 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
         super(FeatureNavigatorSettingsDialog, self).__init__(parent)
 
         self.setupUi(self)
-         
+
+        self._configure_help_button()
+        self._configure_labels()
+
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
 
         self.helpButton.clicked.connect(self.open_help)
+    
+    def _configure_help_button(self):
+        """Apply a theme-aware icon and circular styling to the help button."""
+        if not hasattr(self, "helpButton") or self.helpButton is None:
+            return
 
+        is_dark = self._is_dark_ui()
+
+        icon_name = "question_mark_darkmode.png" if is_dark else "question_mark.png"
+        icon_path = os.path.join(os.path.dirname(__file__), "icons", icon_name)
+
+        if os.path.exists(icon_path):
+            self.helpButton.setIcon(QtGui.QIcon(icon_path))
+
+        self.helpButton.setFixedSize(34, 34)
+        self.helpButton.setIconSize(self.helpButton.size() * 0.58)
+        self.helpButton.setToolTip("Help")
+
+        self.helpButton.setStyleSheet(
+            self._round_icon_button_stylesheet("helpButton", is_dark)
+        )
+
+
+    def _configure_labels(self):
+        """Keep text readable on the light green settings dialog background."""
+
+        label_style = """
+            color: #000000;
+            background: transparent;
+        """
+
+        # QLabel text
+        for label in self.findChildren(QtWidgets.QLabel):
+            label.setStyleSheet(label_style)
+
+        # QCheckBox text
+        for checkbox in self.findChildren(QtWidgets.QCheckBox):
+            checkbox.setStyleSheet("""
+                QCheckBox {
+                    color: #000000;
+                }
+            """)
+
+
+    @staticmethod
+    def _is_dark_ui():
+        """
+        Return True when the active QGIS/Qt palette appears dark.
+
+        This is more reliable than checking only the QGIS theme name because
+        QGIS 4 / Qt6 may use the OS colour scheme while the theme remains 'default'.
+        """
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            return False
+
+        if hasattr(QtGui.QPalette, "ColorRole"):
+            window_role = QtGui.QPalette.ColorRole.Window
+        else:
+            window_role = QtGui.QPalette.Window
+
+        return app.palette().color(window_role).lightness() < 128
+     
+    @staticmethod
+    def _round_icon_button_stylesheet(button_object_name, is_dark):
+        """Return circular button styling for light and dark QGIS themes."""
+        if is_dark:
+            background = "#5a5a5a"
+            hover = "#686868"
+            pressed = "#4d4d4d"
+            border = "#3a3a3a"
+        else:
+            background = "#f4f4f4"
+            hover = "#e6e6e6"
+            pressed = "#d6d6d6"
+            border = "#b8b8b8"
+
+        return f"""
+            QPushButton#{button_object_name} {{
+                border-radius: 17px;
+                border: 1px solid {border};
+                background-color: {background};
+                background-image: none;
+                padding: 4px;
+            }}
+
+            QPushButton#{button_object_name}:hover {{
+                background-color: {hover};
+            }}
+
+            QPushButton#{button_object_name}:pressed {{
+                background-color: {pressed};
+            }}
+        """
+        
     def open_help(self):
         """Open the Feature Navigator help file."""
 

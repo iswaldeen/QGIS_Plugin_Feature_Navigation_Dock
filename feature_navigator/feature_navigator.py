@@ -9,7 +9,7 @@
         begin                : 2025-06-24
         git sha              : $Format:%H$
         copyright            : (C) 2025 by Isaac Thompson
-        email                : ithompson@pre-construct.com
+        email                : iswaldeen@outlook.com
  ***************************************************************************/
 
 /***************************************************************************
@@ -30,15 +30,29 @@ from qgis.core import (
     QgsProject,
     QgsWkbTypes,
     QgsLayerTreeNode,
+    QgsVectorLayer,
 )
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QTimer, QElapsedTimer
 # Initialize Qt resources from file resources.py
-from .resources import *
+from . import resources
 
 # Import the code for the DockWidget
 from .feature_navigator_dockwidget import FeatureNavigatorDockWidget
 from .feature_navigator_dialog import FeatureNavigatorSettingsDialog
 import os.path
+
+try:
+    NO_FOCUS = Qt.FocusPolicy.NoFocus
+    STRONG_FOCUS = Qt.FocusPolicy.StrongFocus
+    LEFT_DOCK_WIDGET_AREA = Qt.DockWidgetArea.LeftDockWidgetArea
+    KEY_SPACE = Qt.Key.Key_Space
+    DIALOG_ACCEPTED = QDialog.DialogCode.Accepted
+except AttributeError:
+    NO_FOCUS = Qt.NoFocus
+    STRONG_FOCUS = Qt.StrongFocus
+    LEFT_DOCK_WIDGET_AREA = Qt.LeftDockWidgetArea
+    KEY_SPACE = Qt.Key_Space
+    DIALOG_ACCEPTED = QDialog.Accepted
 
 
 
@@ -68,8 +82,8 @@ class FeatureNavigator:
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
-            self.translator.load(locale_path)
-            QCoreApplication.installTranslator(self.translator)
+            if self.translator.load(locale_path):
+                QCoreApplication.installTranslator(self.translator)
 
         # Declare instance attributes
         self.actions = []
@@ -80,6 +94,9 @@ class FeatureNavigator:
 
         self.pluginIsActive = False
         self.dockwidget = None
+        
+        self.feature_id_to_index = {}
+        self.is_dark_mode = False
 
         # Internal state must exist even if run() has never been opened
         self.feature_ids = []
@@ -89,6 +106,8 @@ class FeatureNavigator:
         self.ignore_selection_change = False
         self.selected_features_only = False
         self.selected_feature_ids_cache = []
+        self.user_has_selected_layer = False
+        self.suppress_layer_change = False
 
         # Optional runtime objects
         self.timer = None
@@ -196,7 +215,7 @@ class FeatureNavigator:
             icon_path,
             text=self.tr(u'Navigate features in selected layer'),
             callback=self.run,
-            parent=self.iface.mainWindow())
+            parent=self.iface.mainWindow()) 
 
     #--------------------------------------------------------------------------
 
@@ -226,7 +245,7 @@ class FeatureNavigator:
             self.disconnect_layer_feature_signals(old_layer)
 
         try:
-            QgsProject.instance().removeAll.disconnect(self.clear_plugin_state)
+            QgsProject.instance().cleared.disconnect(self.clear_plugin_state)
         except TypeError:
             pass
 
@@ -265,7 +284,7 @@ class FeatureNavigator:
 
                 # Setup map layer combo box
                 self.dockwidget.mMapLayerComboBox.setFilters(QgsMapLayerProxyModel.HasGeometry)
-                self.dockwidget.mMapLayerComboBox.layerChanged.connect(self.reset_feature_index)
+                self.dockwidget.mMapLayerComboBox.layerChanged.connect(self.on_combo_layer_changed)
 
                 # Setup navigation buttons
                 self.dockwidget.previousButton.clicked.connect(self.previous_feature)
@@ -274,14 +293,14 @@ class FeatureNavigator:
                 self.dockwidget.pauseButton.clicked.connect(self.stop_auto_play)
                 
                 # Prevent buttons from being triggered by Space when they have focus
-                self.dockwidget.previousButton.setFocusPolicy(Qt.NoFocus)
-                self.dockwidget.nextButton.setFocusPolicy(Qt.NoFocus)
-                self.dockwidget.playButton.setFocusPolicy(Qt.NoFocus)
-                self.dockwidget.pauseButton.setFocusPolicy(Qt.NoFocus)
-                self.dockwidget.settingsButton.setFocusPolicy(Qt.NoFocus)
+                self.dockwidget.previousButton.setFocusPolicy(NO_FOCUS)
+                self.dockwidget.nextButton.setFocusPolicy(NO_FOCUS)
+                self.dockwidget.playButton.setFocusPolicy(NO_FOCUS)
+                self.dockwidget.pauseButton.setFocusPolicy(NO_FOCUS)
+                self.dockwidget.settingsButton.setFocusPolicy(NO_FOCUS)
                 
                 # Space bar shortcut for play/pause
-                self.spacebar_shortcut = QShortcut(QKeySequence(Qt.Key_Space), self.dockwidget)
+                self.spacebar_shortcut = QShortcut(QKeySequence(KEY_SPACE), self.dockwidget)
                 self.spacebar_shortcut.activated.connect(self.toggle_play_pause_from_spacebar)
                 self.spacebar_shortcut.setEnabled(False)  # default until settings are loaded
 
@@ -297,27 +316,18 @@ class FeatureNavigator:
                 self.dockwidget.playButton.setEnabled(False)
                 self.dockwidget.pauseButton.setEnabled(False)
               
-              # Connect plugin close signal
                 self.dockwidget.closingPlugin.connect(self.onClosePlugin)            
-                QgsProject.instance().removeAll.connect(self.clear_plugin_state)
+                try:
+                    QgsProject.instance().cleared.disconnect(self.clear_plugin_state)
+                except TypeError:
+                    pass
                 
             # Show the dockwidget
-            self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.dockwidget)
-            self.dockwidget.errorLabel.setStyleSheet(
-                """
-                QLabel {
-                    color: #b00020;
-                    background-color: rgba(255, 235, 238, 0.85);
-                    border: 1px solid rgba(176, 0, 32, 0.35);
-                    border-radius: 4px;
-                    padding: 3px 6px;
-                }
-                """
-            )
+            self.iface.addDockWidget(LEFT_DOCK_WIDGET_AREA, self.dockwidget)
             self.dockwidget.errorLabel.setVisible(False)
             self.dockwidget.show()
             
-            self.dockwidget.setFocusPolicy(Qt.StrongFocus)
+            self.dockwidget.setFocusPolicy(STRONG_FOCUS)
             self.dockwidget.setFocus()
             
             # Apply saved space bar setting
@@ -332,20 +342,9 @@ class FeatureNavigator:
                 type=bool
             )
 
-            # ✅ Set active layer *and trigger logic*
-            active_layer = self.iface.activeLayer()
-            if (
-                    active_layer
-                    and active_layer.isValid()
-                    and active_layer.type() == QgsMapLayer.VectorLayer
-                    and active_layer.geometryType() != QgsWkbTypes.NullGeometry
-                ):
-                self.dockwidget.mMapLayerComboBox.setLayer(active_layer)
-                self.reset_feature_index(active_layer)  # <-- this is essential
-            else:
-                self.dockwidget.mMapLayerComboBox.setLayer(None)
-                self.reset_feature_index(None)
-        
+            self.clear_combo_layer_selection()
+                
+   
     def reset_feature_index(self, layer):
         """Reset the feature list and index when a new layer is selected."""
 
@@ -388,8 +387,12 @@ class FeatureNavigator:
                 pass
 
         self.current_layer = layer
-        self.connect_layer_selection_signal(self.current_layer)
-        self.connect_layer_feature_signals(self.current_layer)
+        self.reconnect_signal(
+            layer.selectionChanged,
+            self.on_layer_selection_changed
+        )
+        
+        self.connect_layer_feature_signals(layer)
 
         if self.selected_features_only:
             self.selected_feature_ids_cache = list(self.current_layer.selectedFeatureIds())
@@ -400,6 +403,55 @@ class FeatureNavigator:
         self.current_index = -1
         self.refresh_feature_list(preserve_position=False)
         return
+    
+    def ensure_layer_visible(self, layer):
+        """
+        Ensure the selected layer and any parent groups are visible in the layer tree.
+
+        Returns True if any visibility state was changed.
+        """
+        if not layer:
+            return False
+
+        try:
+            layer_id = layer.id()
+        except RuntimeError:
+            return False
+
+        root = QgsProject.instance().layerTreeRoot()
+        layer_node = root.findLayer(layer_id)
+
+        if layer_node is None:
+            return False
+
+        visibility_changed = False
+
+        # Toggle the layer itself on if needed.
+        if not layer_node.itemVisibilityChecked():
+            layer_node.setItemVisibilityChecked(True)
+            visibility_changed = True
+
+        # Toggle parent groups on too. A checked layer inside an unchecked group
+        # is still not visible on the map canvas.
+        parent = layer_node.parent()
+
+        while parent and parent.nodeType() == QgsLayerTreeNode.NodeGroup:
+            if not parent.itemVisibilityChecked():
+                parent.setItemVisibilityChecked(True)
+                visibility_changed = True
+
+            parent = parent.parent()
+
+        return visibility_changed
+    
+    def reconnect_signal(self, signal, slot):
+        """Safely reconnect a Qt signal."""
+        try:
+            signal.disconnect(slot)
+        except TypeError:
+            pass
+
+        signal.connect(slot)
 
     def connect_layer_selection_signal(self, layer):
         """Connect to the selected layer's selectionChanged signal."""
@@ -455,13 +507,18 @@ class FeatureNavigator:
             return
 
         # Use the first selected feature id
-        fid = next(iter(selected), None)
+        selected_ids = self.current_layer.selectedFeatureIds()
+
+        if not selected_ids:
+            return
+
+        fid = selected_ids[0]
         if fid is None:
             return
 
-        try:
-            self.current_index = self.feature_ids.index(fid)
-        except ValueError:
+        self.current_index = self.feature_id_to_index.get(fid, -1)
+
+        if self.current_index < 0:
             return
         self.has_selected_feature = True
         self.dockwidget.selectedFeatureLabel.setVisible(True)
@@ -493,29 +550,19 @@ class FeatureNavigator:
         # Make sure this layer is the active layer in QGIS
         self.iface.setActiveLayer(self.current_layer)
 
-        # Ensure visibility of layer and parent groups
-        layer_node = self.iface.layerTreeView().layerTreeModel().rootGroup().findLayer(self.current_layer.id())
-        visibility_changed = False
+        visibility_changed = self.ensure_layer_visible(self.current_layer)
 
-        if layer_node:
-            if not layer_node.itemVisibilityChecked():
-                layer_node.setItemVisibilityChecked(True)
-                visibility_changed = True
-
-            parent = layer_node.parent()
-            while parent and parent.nodeType() == QgsLayerTreeNode.NodeGroup:
-                if not parent.itemVisibilityChecked():
-                    parent.setItemVisibilityChecked(True)
-                    visibility_changed = True
-                parent = parent.parent()
-
-        # Notify the user if we had to change visibility
+        # Notify the user only when this plugin changed the layer tree visibility.
         if visibility_changed:
+            layer_name = self.current_layer.name() if self.current_layer else "Selected layer"
+
             QMessageBox.information(
                 self.iface.mainWindow(),
                 "Feature Navigator",
-                "Layer/group(s) was toggled <strong>ON</strong> so the selected layer could be visible."
+                f"{layer_name} layer visibility has been toggled on"
             )
+            
+        self.iface.mapCanvas().refresh()
 
         # Clear previous selection and select current feature
         self.ignore_selection_change = True
@@ -527,7 +574,8 @@ class FeatureNavigator:
         
         # Zoom to feature with fixed buffer (e.g. 5 map units)
         request = QgsFeatureRequest().setFilterFid(fid)
-        feature = next(self.current_layer.getFeatures(request), None)
+        feature_iterator = self.current_layer.getFeatures(request)
+        feature = next(feature_iterator, None)
         if feature and feature.isValid():
             geom = feature.geometry()
             if geom and not geom.isEmpty():
@@ -538,7 +586,6 @@ class FeatureNavigator:
                 buffered_extent = extent.buffered(buffer_size)
 
                 self.iface.mapCanvas().setExtent(buffered_extent)
-                self.iface.mapCanvas().refresh()
                 self.update_selected_feature_label()
     
     def update_selected_feature_label(self):
@@ -632,16 +679,16 @@ class FeatureNavigator:
 
         settings = QSettings()
         current_interval_ms = settings.value("FeatureNavigator/playbackInterval", 1000, type=int)
-        current_buffer_m = settings.value("FeatureNavigator/zoomBuffer", 1, type=int)
+        current_zoom_buffer = settings.value("FeatureNavigator/zoomBuffer", 1, type=int)
         current_spacebar_enabled = settings.value("FeatureNavigator/enableSpacebarPlayPause", False, type=bool)
         current_selected_only = settings.value("FeatureNavigator/selectedFeaturesOnly", False, type=bool)
 
         dialog.speedSpinBox.setValue(current_interval_ms // 1000)
-        dialog.bufferSpinBox.setValue(current_buffer_m)
+        dialog.bufferSpinBox.setValue(current_zoom_buffer)
         dialog.spacebarcheckBox.setChecked(current_spacebar_enabled)
         dialog.selectedfeaturescheckBox.setChecked(current_selected_only)
 
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == DIALOG_ACCEPTED:
             new_interval_ms = dialog.speedSpinBox.value() * 1000
             new_buffer_m = dialog.bufferSpinBox.value()
             new_spacebar_enabled = dialog.spacebarcheckBox.isChecked()
@@ -682,10 +729,30 @@ class FeatureNavigator:
 
             if was_playing and self.feature_ids:
                 self.timer.start()
-                
-     # --------------------------------------------------------------------------
-    # FEATURE LIST AUTO-REFRESH LOGIC
-    # --------------------------------------------------------------------------
+    
+    def clear_combo_layer_selection(self):
+        """Keep the layer combo box empty until the user explicitly selects a layer."""
+        if not self.dockwidget:
+            return
+
+        self.suppress_layer_change = True
+        try:
+            self.dockwidget.mMapLayerComboBox.setLayer(None)
+        finally:
+            self.suppress_layer_change = False
+
+        self.user_has_selected_layer = False
+        self.reset_feature_index(None)
+
+
+    def on_combo_layer_changed(self, layer):
+        """Handle only user-driven layer selections from the combo box."""
+        if self.suppress_layer_change:
+            return
+
+        self.user_has_selected_layer = layer is not None
+        self.reset_feature_index(layer)
+
 
     def connect_layer_feature_signals(self, layer):
         """Connect to layer signals that affect the feature list."""
@@ -701,8 +768,7 @@ class FeatureNavigator:
             layer.featureDeleted.connect(self.on_layer_feature_deleted)
         except TypeError:
             pass
-
-
+            
     def disconnect_layer_feature_signals(self, layer):
         """Disconnect from layer signals that affect the feature list."""
         if not layer:
@@ -734,14 +800,23 @@ class FeatureNavigator:
         old_index = self.current_index
 
         current_fid = None
-        if preserve_position and old_feature_ids and 0 <= old_index < len(old_feature_ids):
-            current_fid = old_feature_ids[old_index]
+        if preserve_position and current_fid in self.feature_id_to_index:
+            self.current_index = self.feature_id_to_index[current_fid]
 
         if self.selected_features_only:
             self.feature_ids = list(self.selected_feature_ids_cache)
         else:
-            self.feature_ids = [f.id() for f in layer.getFeatures()]
+            request = (
+                QgsFeatureRequest()
+                .setFlags(QgsFeatureRequest.NoGeometry)
+                .setNoAttributes()
+            )
+            self.feature_ids = [feature.id() for feature in layer.getFeatures(request)]
+
         self.feature_ids.sort()
+        self.feature_id_to_index = {
+            fid: idx for idx, fid in enumerate(self.feature_ids)
+        }
         num_features = len(self.feature_ids)
 
         if num_features == 0:
@@ -762,8 +837,8 @@ class FeatureNavigator:
             self.dockwidget.mMapLayerComboBox.setEnabled(True)
             return
 
-        if preserve_position and current_fid in self.feature_ids:
-            self.current_index = self.feature_ids.index(current_fid)
+        if preserve_position and current_fid in self.feature_id_to_index:
+            self.current_index = self.feature_id_to_index[current_fid]
         elif deleted_fid is not None and old_feature_ids:
             deleted_index = old_feature_ids.index(deleted_fid) if deleted_fid in old_feature_ids else old_index
 
@@ -828,6 +903,13 @@ class FeatureNavigator:
         if self.dockwidget:
             self.dockwidget.selectedFeatureLabel.setVisible(False)
             self.dockwidget.selectedFeatureLabel.setText("")
+    
+    def set_navigation_enabled(self, enabled):
+        """Enable or disable manual navigation controls."""
+        self.dockwidget.previousButton.setEnabled(enabled)
+        self.dockwidget.nextButton.setEnabled(enabled)
+        self.dockwidget.playButton.setEnabled(enabled)
+        self.dockwidget.pauseButton.setEnabled(False)
         
     def safe_current_layer(self):
         """Return current layer if still valid, otherwise None."""
@@ -868,7 +950,7 @@ class FeatureNavigator:
             self.dockwidget.selectedFeatureLabel.setVisible(False)
             self.dockwidget.selectedFeatureLabel.setText("")
             self.dockwidget.errorLabel.setVisible(False)
-            self.dockwidget.mMapLayerComboBox.setLayer(None)
+            self.clear_combo_layer_selection()
             self.dockwidget.mMapLayerComboBox.setEnabled(True)
             self.disable_navigation()
         

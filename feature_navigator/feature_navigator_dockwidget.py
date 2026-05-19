@@ -9,7 +9,7 @@
         begin                : 2025-06-24
         git sha              : $Format:%H$
         copyright            : (C) 2025 by Isaac Thompson
-        email                : ithompson@pre-construct.com
+        email                : iswaldeen@outlook.com
  ***************************************************************************/
 
 /***************************************************************************
@@ -38,15 +38,105 @@ class FeatureNavigatorDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(FeatureNavigatorDockWidget, self).__init__(parent)
-        # Set up the user interface from Designer.
-        # After setupUI you can access any designer object by doing
-        # self.<objectname>, and you can use autoconnect slots - see
-        # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
-        # #widgets-and-dialogs-with-auto-connect
-        self.setupUi(self)
-        
-        
 
+        self.setupUi(self)
+        self._configure_settings_button()
+        self._configure_labels()
+
+    def _configure_settings_button(self):
+        """Apply a theme-aware icon and circular styling to the settings button."""
+        if not hasattr(self, "settingsButton") or self.settingsButton is None:
+            return
+
+        is_dark = self._is_dark_ui()
+
+        icon_name = "settings_darkmode.png" if is_dark else "settings.png"
+        icon_path = os.path.join(os.path.dirname(__file__), "icons", icon_name)
+
+        if os.path.exists(icon_path):
+            self.settingsButton.setIcon(QtGui.QIcon(icon_path))
+
+        self.settingsButton.setFixedSize(34, 34)
+        self.settingsButton.setIconSize(self.settingsButton.size() * 0.58)
+        self.settingsButton.setToolTip("Settings")
+
+        self.settingsButton.setStyleSheet(
+            self._round_icon_button_stylesheet("settingsButton", is_dark)
+        )
+
+    @staticmethod
+    def _is_dark_ui():
+        """
+        Return True when the active QGIS/Qt palette appears dark.
+
+        This is more reliable than checking only QgsApplication.themeName(),
+        because QGIS 4 / Qt6 may use the operating system colour scheme while
+        the QGIS UI theme name remains 'default'.
+        """
+        app = QtWidgets.QApplication.instance()
+        if app is None:
+            return False
+
+        if hasattr(QtGui.QPalette, "ColorRole"):
+            window_role = QtGui.QPalette.ColorRole.Window
+        else:
+            window_role = QtGui.QPalette.Window
+
+        window_colour = app.palette().color(window_role)
+        return window_colour.lightness() < 128
+    
+    def _configure_labels(self):
+        """Ensure important labels remain readable on the light green background."""
+
+        label_style = """
+            QLabel {
+                color: #000000;
+                background: transparent;
+            }
+        """
+
+        for label_name in (
+            "centrallabel",
+            "errorLabel",
+            "selectedFeatureLabel"
+        ):
+            label = getattr(self, label_name, None)
+
+            if isinstance(label, QtWidgets.QLabel):
+                label.setStyleSheet(label_style)
+     
+    @staticmethod
+    def _round_icon_button_stylesheet(button_object_name, is_dark):
+        """Return circular button styling for light and dark QGIS themes."""
+        if is_dark:
+            background = "#5a5a5a"
+            hover = "#686868"
+            pressed = "#4d4d4d"
+            border = "#3a3a3a"
+        else:
+            background = "#f4f4f4"
+            hover = "#e6e6e6"
+            pressed = "#d6d6d6"
+            border = "#b8b8b8"
+
+        return f"""
+            QPushButton#{button_object_name} {{
+                border-radius: 17px;
+                border: 1px solid {border};
+                background-color: {background};
+                background-image: none;
+                padding: 4px;
+            }}
+
+            QPushButton#{button_object_name}:hover {{
+                background-color: {hover};
+            }}
+
+            QPushButton#{button_object_name}:pressed {{
+                background-color: {pressed};
+            }}
+        """
+        
     def closeEvent(self, event):
         self.closingPlugin.emit()
         event.accept()

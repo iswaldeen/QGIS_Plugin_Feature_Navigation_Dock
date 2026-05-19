@@ -249,12 +249,11 @@
       </widget>
      </item>
      <item row="0" column="1" alignment="Qt::AlignHCenter">
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="titlelabel">
        <property name="font">
         <font>
          <pointsize>11</pointsize>
-         <weight>75</weight>
-         <bold>true</bold>
+         <bold>false</bold>
         </font>
        </property>
        <property name="text">
@@ -273,24 +272,14 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="font">
+        <font/>
+       </property>
        <property name="layoutDirection">
         <enum>Qt::LeftToRight</enum>
        </property>
        <property name="styleSheet">
-        <string notr="true">QPushButton {
-    border-radius: 16px;
-    border: 1px solid gray;
-    background-color: white;
-    min-width: 32px;
-    max-width: 32px;
-    min-height: 32px;
-    max-height: 32px;
-    font-weight: bold;
-}
-
-QPushButton:hover {
-    background-color: #e8f5e8;
-}</string>
+        <string notr="true"/>
        </property>
        <property name="text">
         <string/>
