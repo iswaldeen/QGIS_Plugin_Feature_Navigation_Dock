@@ -9,7 +9,7 @@ qgisMaximumVersion=4.99
 supportsQt6=True
 
 description=This plugin allows the user to navigate through features within a selected layer
-version=1.11
+version=1.2
 author=Isaac Thompson
 email=iswaldeen@outlook.com
 
@@ -23,7 +23,12 @@ repository=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=<strong>1.11</strong>
+changelog=<strong>1.2</strong>
+ - Added Settings menu entry to Plugins > Feature Navigator
+ - Added Help menu entry to Plugins > Feature Navigator
+ - Added automatic dark/light mode menu icon support
+
+ <p><strong>1.11</strong>
  - Fixed crash caused by deleted layers during navigation
  - Improved safe handling of invalid QgsVectorLayer references
  - Improved layer removal and project cleanup stability

@@ -23,6 +23,8 @@ Feature Navigator is designed for compatibility with modern QGIS versions and in
 * Automatically enables hidden layers during navigation
 * End-of-layer navigation notifications
 * Integrated help documentation
+* Direct access to Settings and Help from the QGIS Plugins menu
+* Theme-aware UI and menu icon support for both light and dark QGIS themes
 * Modernized PyQt / Qt compatibility handling
 * Improved robustness for layer and feature state changes
 * Improved cleanup handling for deleted layers and projects

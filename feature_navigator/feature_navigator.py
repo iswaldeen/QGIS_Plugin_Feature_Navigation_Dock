@@ -21,8 +21,9 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QShortcut
-from qgis.PyQt.QtGui import QIcon, QKeySequence
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QShortcut, QMenu
+from qgis.PyQt.QtGui import QDesktopServices, QIcon, QKeySequence
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QTimer, QElapsedTimer, QUrl
 from qgis.core import (
     QgsFeatureRequest,
     QgsMapLayer,
@@ -32,7 +33,6 @@ from qgis.core import (
     QgsLayerTreeNode,
     QgsVectorLayer,
 )
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QTimer, QElapsedTimer
 # Initialize Qt resources from file resources.py
 from . import resources
 
@@ -208,7 +208,39 @@ class FeatureNavigator:
         self.actions.append(action)
 
         return action
+    
+    def is_qgis_dark_theme(self):
+        """Return True when QGIS is using a dark UI theme."""
+        try:
+            return self.iface.mainWindow().palette().window().color().lightness() < 128
+        except RuntimeError:
+            return False
 
+    def themed_icon_path(self, light_icon_name, dark_icon_name):
+        """Return the best icon path for the current QGIS theme."""
+        icon_name = dark_icon_name if self.is_qgis_dark_theme() else light_icon_name
+        icon_path = os.path.join(self.plugin_dir, "icons", icon_name)
+
+        if os.path.exists(icon_path):
+            return icon_path
+
+        # Fallback to the light icon if the dark-mode variant is missing.
+        fallback_path = os.path.join(self.plugin_dir, "icons", light_icon_name)
+        return fallback_path if os.path.exists(fallback_path) else ""
+
+    def open_help_document(self):
+        """Open the plugin help document in the user's default browser."""
+        help_path = os.path.join(self.plugin_dir, "help", "help.html")
+
+        if not os.path.exists(help_path):
+            QMessageBox.warning(
+                self.iface.mainWindow(),
+                "Feature Navigator",
+                "The help document could not be found."
+            )
+            return
+
+        QDesktopServices.openUrl(QUrl.fromLocalFile(help_path))
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
@@ -218,7 +250,24 @@ class FeatureNavigator:
             icon_path,
             text=self.tr(u'Navigate features in selected layer'),
             callback=self.run,
-            parent=self.iface.mainWindow()) 
+            parent=self.iface.mainWindow()
+        )
+
+        self.add_action(
+            self.themed_icon_path("settings.png", "settings_darkmode.png"),
+            text=self.tr(u"Settings"),
+            callback=self.show_settings_dialog,
+            add_to_toolbar=False,
+            parent=self.iface.mainWindow()
+        )
+
+        self.add_action(
+            self.themed_icon_path("question_mark.png", "question_mark_darkmode.png"),
+            text=self.tr(u"Help"),
+            callback=self.open_help_document,
+            add_to_toolbar=False,
+            parent=self.iface.mainWindow()
+        )
 
     #--------------------------------------------------------------------------
 
@@ -822,11 +871,11 @@ class FeatureNavigator:
             
             self.nav_slider_enabled = new_nav_slider_enabled
 
-            self.dockwidget.navhorizontalSlider.setVisible(
-                self.nav_slider_enabled
-            )
-
-            self.update_navigation_slider()
+            if self.dockwidget is not None:
+                self.dockwidget.navhorizontalSlider.setVisible(
+                    self.nav_slider_enabled
+                )
+                self.update_navigation_slider()
 
             if self.selected_features_only and self.current_layer:
                 self.selected_feature_ids_cache = list(self.current_layer.selectedFeatureIds())
