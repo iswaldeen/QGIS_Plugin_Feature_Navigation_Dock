@@ -1,10 +1,6 @@
 # QGIS Plugin - Feature Navigator
 
-Feature Navigator is a QGIS plugin for efficiently navigating through features in a selected vector layer.
-
-The plugin supports both manual and automatic feature navigation workflows. 
-
-Users can move forwards and backwards through features, navigate selected features only, automatically zoom to active features, track navigation progress using an optional slider bar, and quickly access plugin settings and help directly from the QGIS Plugins menu.
+Feature Navigator is a QGIS plugin for efficiently moving through features in vector layers using manual controls, autoplay, selected-feature mode, and optional slider-based tools.
 
 Feature Navigator is designed for compatibility with modern QGIS versions and includes forward-compatible support for Qt6 and upcoming QGIS 4.x environments.
 
