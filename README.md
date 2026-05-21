@@ -2,7 +2,7 @@
 
 Feature Navigator is a QGIS plugin for efficiently navigating through features in a selected vector layer.
 
-The plugin supports both manual and automatic feature navigation workflows, allowing users to move forwards and backwards through features, navigate selected features only, and automatically zoom to the active feature.
+The plugin supports both manual and automatic feature navigation workflows, allowing users to move forwards and backwards through features, navigate selected features only, automatically zoom to the active feature, visually track navigation progress using an optional navigation slider bar, and quickly access plugin settings and help directly from the QGIS Plugins menu.
 
 Feature Navigator is designed for compatibility with modern QGIS versions and includes forward-compatible support for Qt6 and upcoming QGIS 4.x environments.
 
@@ -14,12 +14,18 @@ Feature Navigator is designed for compatibility with modern QGIS versions and in
 * Navigate through selected features only
 * Automatically zoom to active features
 * Autoplay mode for sequential feature navigation
+* Optional looping navigation mode
+* Optional navigation slider bar
+* Quick slider-based feature navigation
+* Live slider position updates during navigation and autoplay
 * Spacebar play/pause shortcut support
 * Automatically updates when features are added or removed
+* Automatically enables hidden layers during navigation
+* End-of-layer navigation notifications
 * Integrated help documentation
-* Theme-aware UI support for both light and dark QGIS themes
 * Modernized PyQt / Qt compatibility handling
 * Improved robustness for layer and feature state changes
+* Improved cleanup handling for deleted layers and projects
 * Forward-compatible design for:
 
   * QGIS 3.x

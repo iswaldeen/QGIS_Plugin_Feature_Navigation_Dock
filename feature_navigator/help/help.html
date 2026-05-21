@@ -81,6 +81,10 @@
         <li>Autoplay feature navigation</li>
         <li>Pause and resume autoplay</li>
         <li>Optional spacebar play/pause shortcut</li>
+		<li>Optional looping navigation mode</li>
+		<li>Optional navigation slider bar</li>
+		<li>Quick slider-based feature navigation</li>
+		<li>Live slider position updates during navigation and autoplay</li>
         <li>Navigate only selected features</li>
         <li>Automatically refresh when selections or features change</li>
 		<li>Automatically turns on hidden layers when navigation starts</li>
@@ -96,6 +100,8 @@
         <li>Select a vector layer using the layer dropdown.</li>
 
         <li>Use <strong>Next</strong> and <strong>Previous</strong> to move through features.</li>
+			
+		<li>If the navigation slider is enabled in settings, drag the slider to quickly move through features.</li>
 
         <li>Press <strong>Play</strong> to start autoplay navigation.</li>
 
@@ -149,6 +155,15 @@
             <strong>Navigate through selected features only</strong> -
             Restrict navigation to selected features
         </li>
+		<li>
+			<strong>Loop Navigation</strong> -
+			Restart navigation from the beginning when the final feature is reached
+		</li>
+
+		<li>
+			<strong>Show Navigation Slider</strong> -
+			Show or hide the feature navigation slider bar
+		</li>
     </ul>
 </div>
 
@@ -157,15 +172,17 @@
 
     <ul>
         <li>Autoplay moves through features automatically</li>
+		
+		<li>The navigation slider updates automatically during autoplay</li>
 
         <li>Pause keeps the current playback countdown</li>
 
         <li>Play resumes from the remaining countdown time</li>
 
-        <li>
-            Changing playback speed resets the countdown
-            using the new timer value
-        </li>
+        <li>Changing playback speed resets the countdown using the new timer value</li>
+		
+		<li>If looping navigation is disabled, autoplay stops when the final feature is reached</li>
+		
     </ul>
 </div>
 
@@ -204,6 +221,8 @@
 		</li>
 
         <li>Navigation is based on QGIS feature IDs</li>
+		
+		<li>The navigation slider provides a visual indicator of your current position in the layer</li>
 
         <li>Selected feature mode requires selected features in the active layer</li>
     </ul>

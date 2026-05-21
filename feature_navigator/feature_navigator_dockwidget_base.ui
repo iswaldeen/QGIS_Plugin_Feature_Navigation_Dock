@@ -29,29 +29,14 @@ QDockWidget &gt; QWidget {
    <layout class="QGridLayout" name="gridLayout">
     <item row="5" column="0">
      <layout class="QGridLayout" name="gridLayout_2">
-      <item row="4" column="0" colspan="3">
-       <widget class="QLabel" name="errorLabel">
-        <property name="font">
-         <font>
-          <bold>false</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>No features in currently selected layer</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="2">
+      <item row="7" column="2">
        <widget class="QPushButton" name="nextButton">
         <property name="text">
          <string>Next</string>
         </property>
        </widget>
       </item>
-      <item row="8" column="1">
+      <item row="9" column="1">
        <layout class="QGridLayout" name="gridLayout_3">
         <item row="0" column="0">
          <widget class="QPushButton" name="playButton">
@@ -69,6 +54,40 @@ QDockWidget &gt; QWidget {
         </item>
        </layout>
       </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="centrallabel">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <weight>50</weight>
+          <bold>false</bold>
+          <kerning>true</kerning>
+         </font>
+        </property>
+        <property name="text">
+         <string>Select a map layer</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0" colspan="3">
+       <widget class="QLabel" name="errorLabel">
+        <property name="font">
+         <font>
+          <weight>50</weight>
+          <bold>false</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>No features in currently selected layer</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
       <item row="5" column="1">
        <spacer name="verticalSpacer">
         <property name="orientation">
@@ -85,18 +104,12 @@ QDockWidget &gt; QWidget {
       <item row="3" column="0" colspan="3">
        <widget class="QgsMapLayerComboBox" name="mMapLayerComboBox"/>
       </item>
-      <item row="6" column="0">
-       <widget class="QPushButton" name="previousButton">
-        <property name="text">
-         <string>Previous</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
+      <item row="7" column="1">
        <widget class="QLabel" name="selectedFeatureLabel">
         <property name="font">
          <font>
           <pointsize>7</pointsize>
+          <weight>50</weight>
           <bold>false</bold>
          </font>
         </property>
@@ -105,6 +118,13 @@ QDockWidget &gt; QWidget {
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QPushButton" name="previousButton">
+        <property name="text">
+         <string>Previous</string>
         </property>
        </widget>
       </item>
@@ -128,20 +148,10 @@ QDockWidget &gt; QWidget {
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QLabel" name="centrallabel">
-        <property name="font">
-         <font>
-          <pointsize>10</pointsize>
-          <bold>false</bold>
-          <kerning>true</kerning>
-         </font>
-        </property>
-        <property name="text">
-         <string>Select a map layer</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+      <item row="6" column="1">
+       <widget class="QSlider" name="navhorizontalSlider">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>

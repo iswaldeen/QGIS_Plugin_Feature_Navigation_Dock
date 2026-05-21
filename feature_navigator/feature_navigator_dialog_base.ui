@@ -142,17 +142,14 @@
    </property>
    <item row="0" column="0">
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="6" column="5">
-      <widget class="QSpinBox" name="bufferSpinBox">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>999</number>
+     <item row="10" column="5">
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>
-     <item row="5" column="0">
+     <item row="8" column="0">
       <widget class="QLabel" name="speedLabel">
        <property name="text">
         <string>Auto Play speed (s)</string>
@@ -162,7 +159,30 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
+     <item row="9" column="0">
+      <widget class="QSpinBox" name="speedSpinBox">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>999</number>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="1">
+      <spacer name="verticalSpacer">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item row="2" column="1">
       <spacer name="verticalSpacer_3">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
@@ -175,18 +195,39 @@
        </property>
       </spacer>
      </item>
-     <item row="6" column="1">
-      <spacer name="verticalSpacer">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
+     <item row="0" column="1" alignment="Qt::AlignHCenter">
+      <widget class="QLabel" name="titlelabel">
+       <property name="font">
+        <font>
+         <pointsize>11</pointsize>
+         <weight>50</weight>
+         <bold>false</bold>
+        </font>
        </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
+       <property name="text">
+        <string>Settings</string>
        </property>
-      </spacer>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="0">
+      <widget class="QCheckBox" name="spacebarcheckBox">
+       <property name="text">
+        <string>Enable space bar pause/play</string>
+       </property>
+      </widget>
+     </item>
+     <item row="8" column="5">
+      <widget class="QLabel" name="bufferLabel">
+       <property name="text">
+        <string>Zoom Buffer extent (m)</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
      </item>
      <item row="0" column="0">
       <spacer name="horizontalSpacer">
@@ -200,69 +241,6 @@
         </size>
        </property>
       </spacer>
-     </item>
-     <item row="3" column="1">
-      <spacer name="verticalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>20</width>
-         <height>40</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="7" column="5">
-      <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0">
-      <widget class="QSpinBox" name="speedSpinBox">
-       <property name="minimum">
-        <number>1</number>
-       </property>
-       <property name="maximum">
-        <number>999</number>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="spacebarcheckBox">
-       <property name="text">
-        <string>Enable space bar pause/play</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="5">
-      <widget class="QLabel" name="bufferLabel">
-       <property name="text">
-        <string>Zoom Buffer extent (m)</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="1" alignment="Qt::AlignHCenter">
-      <widget class="QLabel" name="titlelabel">
-       <property name="font">
-        <font>
-         <pointsize>11</pointsize>
-         <bold>false</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Settings</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
      </item>
      <item row="0" column="5" alignment="Qt::AlignRight">
       <widget class="QPushButton" name="helpButton">
@@ -290,10 +268,34 @@
        </property>
       </widget>
      </item>
+     <item row="5" column="0">
+      <widget class="QCheckBox" name="loopcheckBox">
+       <property name="text">
+        <string>Enable playback loop</string>
+       </property>
+      </widget>
+     </item>
+     <item row="9" column="5">
+      <widget class="QSpinBox" name="bufferSpinBox">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>999</number>
+       </property>
+      </widget>
+     </item>
      <item row="3" column="0">
       <widget class="QCheckBox" name="selectedfeaturescheckBox">
        <property name="text">
         <string>Navigate selected features only</string>
+       </property>
+      </widget>
+     </item>
+     <item row="6" column="0">
+      <widget class="QCheckBox" name="navcheckBox">
+       <property name="text">
+        <string>Enable navigation slider</string>
        </property>
       </widget>
      </item>
