@@ -24,9 +24,7 @@ repository=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
 changelog=<strong>1.21</strong>
- - License file added
- - Updated about section in metadata
- - Updated homepage link
+ - UI improvements, stability improvements, and bug fixes
 
  <p><strong>1.2</strong>
  - Added Settings menu entry to Plugins > Feature Navigator
