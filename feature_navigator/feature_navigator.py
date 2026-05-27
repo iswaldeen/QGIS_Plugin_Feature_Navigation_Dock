@@ -21,17 +21,14 @@
  *                                                                         *
  ***************************************************************************/
 """
-from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QShortcut, QMenu
+from qgis.PyQt.QtWidgets import QAction, QDialog, QMessageBox, QShortcut
 from qgis.PyQt.QtGui import QDesktopServices, QIcon, QKeySequence
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication, Qt, QTimer, QElapsedTimer, QUrl
 from qgis.core import (
     QgsFeatureRequest,
-    QgsMapLayer,
     QgsMapLayerProxyModel,
     QgsProject,
-    QgsWkbTypes,
     QgsLayerTreeNode,
-    QgsVectorLayer,
 )
 # Initialize Qt resources from file resources.py
 from . import resources
@@ -106,7 +103,7 @@ class FeatureNavigator:
         self.ignore_selection_change = False
         self.selected_features_only = False
         self.loop_navigation_enabled = False
-        self.nav_slider_enabled = False
+        self.nav_slider_enabled = True
         self.ignore_slider_change = False
         self.selected_feature_ids_cache = []
         self.user_has_selected_layer = False
@@ -286,7 +283,7 @@ class FeatureNavigator:
 
 
     def unload(self):
-        """Removes the plugin menu item and icon from QGIS GUI."""
+        """Remove the plugin menu items, toolbar icons, and signal connections."""
 
         if self.timer is not None and self.timer.isActive():
             self.timer.stop()
@@ -301,6 +298,20 @@ class FeatureNavigator:
         except TypeError:
             pass
 
+        try:
+            QgsProject.instance().layerWillBeRemoved.disconnect(
+                self.on_layer_will_be_removed
+            )
+        except TypeError:
+            pass
+
+        try:
+            QgsProject.instance().layersAdded.disconnect(
+                self.on_project_layers_added
+            )
+        except TypeError:
+            pass
+
         for action in self.actions:
             self.iface.removePluginMenu(self.menu, action)
             self.iface.removeToolBarIcon(action)
@@ -311,6 +322,7 @@ class FeatureNavigator:
         self.timer = None
         self.current_layer = None
         self.feature_ids = []
+        self.feature_id_to_index = {}
         self.current_index = -1
         self.has_selected_feature = False
         self.pluginIsActive = False
@@ -324,6 +336,36 @@ class FeatureNavigator:
             if self.dockwidget is None:
                 # Create the dockwidget and setup
                 self.dockwidget = FeatureNavigatorDockWidget()
+                
+                required_widgets = (
+                    "settingsButton",
+                    "selectedFeatureLabel",
+                    "mMapLayerComboBox",
+                    "previousButton",
+                    "nextButton",
+                    "playButton",
+                    "pauseButton",
+                    "navhorizontalSlider",
+                    "errorLabel",
+                )
+
+                missing_widgets = [
+                    widget_name
+                    for widget_name in required_widgets
+                    if not hasattr(self.dockwidget, widget_name)
+                ]
+
+                if missing_widgets:
+                    QMessageBox.critical(
+                        self.iface.mainWindow(),
+                        "Feature Navigator",
+                        "The plugin UI is missing required widget(s): "
+                        + ", ".join(missing_widgets)
+                    )
+                    self.pluginIsActive = False
+                    self.dockwidget = None
+                    return
+                    
                 self.dockwidget.settingsButton.clicked.connect(self.show_settings_dialog)
                 self.dockwidget.selectedFeatureLabel.setVisible(False)
 
@@ -347,7 +389,7 @@ class FeatureNavigator:
                 self.dockwidget.navhorizontalSlider.valueChanged.connect(
                     self.on_navigation_slider_changed
                 )
-                self.dockwidget.navhorizontalSlider.setVisible(False)
+                self.dockwidget.navhorizontalSlider.setVisible(True)
                 self.dockwidget.navhorizontalSlider.setEnabled(False)
                 
                 # Prevent buttons from being triggered by Space when they have focus
@@ -388,12 +430,23 @@ class FeatureNavigator:
                     )
                 except TypeError:
                     pass
+                
+                try:
+                    QgsProject.instance().layersAdded.disconnect(
+                        self.on_project_layers_added
+                    )
+                except TypeError:
+                    pass
 
                 # Clear plugin state safely when the active layer is removed
                 QgsProject.instance().layerWillBeRemoved.connect(
                     self.on_layer_will_be_removed
                 )
                 
+                # Keep the combo box empty when layers are added by loading/opening a project.
+                QgsProject.instance().cleared.connect(self.clear_plugin_state)
+                QgsProject.instance().layersAdded.connect(self.on_project_layers_added)
+                                
             # Show the dockwidget
             self.iface.addDockWidget(LEFT_DOCK_WIDGET_AREA, self.dockwidget)
             self.dockwidget.errorLabel.setVisible(False)
@@ -422,7 +475,7 @@ class FeatureNavigator:
             
             self.nav_slider_enabled = settings.value(
                 "FeatureNavigator/showNavigationSlider",
-                False,
+                True,
                 type=bool
             )
 
@@ -489,6 +542,22 @@ class FeatureNavigator:
         self.current_index = -1
         self.refresh_feature_list(preserve_position=False)
         return
+    
+    def on_project_layers_added(self, layers):
+        """
+        Keep the layer combo box empty when layers are added automatically.
+
+        QgsMapLayerComboBox can auto-select the first available layer when the
+        project/layer model changes. The plugin should only select a layer after
+        the user explicitly chooses one from the combo box.
+        """
+        if self.user_has_selected_layer or self.current_layer is not None:
+            return
+
+        if not self.dockwidget:
+            return
+
+        QTimer.singleShot(0, self.clear_combo_layer_selection)
     
     def ensure_layer_visible(self, layer):
         """
@@ -573,8 +642,7 @@ class FeatureNavigator:
         elif self.current_index >= len(self.feature_ids) - 1:
             if not self.loop_navigation_enabled:
                 self.stop_auto_play()
-                QMessageBox.information(
-                    self.iface.mainWindow(),
+                self.iface.messageBar().pushInfo(
                     "Feature Navigator",
                     "The final feature of this layer has been reached."
                 )
@@ -609,6 +677,18 @@ class FeatureNavigator:
             return
 
         selected_ids = layer.selectedFeatureIds()
+        if not selected_ids:
+            return
+
+        selected_fid = next(iter(selected_ids), None)
+        if selected_fid not in self.feature_id_to_index:
+            return
+
+        self.current_index = self.feature_id_to_index[selected_fid]
+        self.has_selected_feature = True
+        self.dockwidget.selectedFeatureLabel.setVisible(True)
+        self.update_selected_feature_label()
+        self.update_navigation_slider()
     
     def previous_feature(self):
         """Move backward in the feature list."""
@@ -622,8 +702,7 @@ class FeatureNavigator:
         elif self.current_index <= 0:
             if not self.loop_navigation_enabled:
                 self.stop_auto_play()
-                QMessageBox.information(
-                    self.iface.mainWindow(),
+                self.iface.messageBar().pushInfo(
                     "Feature Navigator",
                     "The first feature of this layer has been reached."
                 )
@@ -657,7 +736,8 @@ class FeatureNavigator:
             slider.setEnabled(self.nav_slider_enabled and len(self.feature_ids) > 1)
 
             if self.current_index >= 0:
-                slider.setValue(self.current_index)
+                safe_index = max(0, min(self.current_index, len(self.feature_ids) - 1))
+                slider.setValue(safe_index)
             else:
                 slider.setValue(0)
         finally:
@@ -676,6 +756,8 @@ class FeatureNavigator:
 
         if self.timer is not None and self.timer.isActive():
             self.stop_auto_play()
+
+        self.ensure_current_layer_visible_with_notification()
 
         self.current_index = value
         self.has_selected_feature = True
@@ -702,20 +784,10 @@ class FeatureNavigator:
 
         self.iface.setActiveLayer(layer)
 
-        visibility_changed = self.ensure_layer_visible(layer)
-
-        if visibility_changed:
-            QMessageBox.information(
-                self.iface.mainWindow(),
-                "Feature Navigator",
-                f"{layer.name()} layer visibility has been toggled on"
-            )
-
-        self.iface.mapCanvas().refresh()
+        self.ensure_current_layer_visible_with_notification()
 
         self.ignore_selection_change = True
         try:
-            layer.removeSelection()
             layer.selectByIds([fid])
         except RuntimeError:
             self.clear_plugin_state()
@@ -723,16 +795,27 @@ class FeatureNavigator:
         finally:
             self.ignore_selection_change = False
 
-        request = QgsFeatureRequest().setFilterFid(fid)
-        feature = next(layer.getFeatures(request), None)
+        feature = layer.getFeature(fid)
 
-        if feature and feature.isValid():
-            geom = feature.geometry()
-            if geom and not geom.isEmpty():
-                buffer_size = QSettings().value("FeatureNavigator/zoomBuffer", 1.0, type=float)
-                self.iface.mapCanvas().setExtent(geom.boundingBox().buffered(buffer_size))
-                self.update_selected_feature_label()
-                self.update_navigation_slider()
+        if not feature or not feature.isValid():
+            self.update_selected_feature_label()
+            self.update_navigation_slider()
+            return
+
+        geom = feature.geometry()
+
+        if geom and not geom.isNull() and not geom.isEmpty():
+            buffer_size = QSettings().value(
+                "FeatureNavigator/zoomBuffer",
+                1.0,
+                type=float
+            )
+            self.iface.mapCanvas().setExtent(
+                geom.boundingBox().buffered(buffer_size)
+            )
+
+        self.update_selected_feature_label()
+        self.update_navigation_slider()
     
     def update_selected_feature_label(self):
         """Update the 'Feature X of Y' label."""
@@ -813,6 +896,9 @@ class FeatureNavigator:
                 
     def disable_navigation(self):
         """Disable all navigation-related controls."""
+        if not self.dockwidget:
+            return
+
         self.dockwidget.previousButton.setEnabled(False)
         self.dockwidget.nextButton.setEnabled(False)
         self.dockwidget.playButton.setEnabled(False)
@@ -825,14 +911,14 @@ class FeatureNavigator:
 
         settings = QSettings()
         current_interval_ms = settings.value("FeatureNavigator/playbackInterval", 1000, type=int)
-        current_zoom_buffer = settings.value("FeatureNavigator/zoomBuffer", 1, type=int)
+        current_zoom_buffer = settings.value("FeatureNavigator/zoomBuffer",1.0,type=float)
         current_spacebar_enabled = settings.value("FeatureNavigator/enableSpacebarPlayPause", False, type=bool)
         current_selected_only = settings.value("FeatureNavigator/selectedFeaturesOnly", False, type=bool)
         current_loop_enabled = settings.value("FeatureNavigator/loopNavigation",False,type=bool)
-        current_nav_slider_enabled = settings.value("FeatureNavigator/showNavigationSlider",False,type=bool)
+        current_nav_slider_enabled = settings.value("FeatureNavigator/showNavigationSlider",True,type=bool)
         
         dialog.speedSpinBox.setValue(current_interval_ms // 1000)
-        dialog.bufferSpinBox.setValue(current_zoom_buffer)
+        dialog.bufferSpinBox.setValue(int(round(current_zoom_buffer)))
         dialog.spacebarcheckBox.setChecked(current_spacebar_enabled)
         dialog.selectedfeaturescheckBox.setChecked(current_selected_only)
         dialog.loopcheckBox.setChecked(current_loop_enabled)
@@ -923,10 +1009,10 @@ class FeatureNavigator:
         if not layer:
             return
 
-        try:
-            layer.featureAdded.connect(self.on_layer_feature_added)
-        except TypeError:
-            pass
+        self.reconnect_signal(
+            layer.featureAdded,
+            self.on_layer_feature_added
+        )
 
         try:
             layer.featureDeleted.connect(self.on_layer_feature_deleted)
@@ -955,17 +1041,23 @@ class FeatureNavigator:
         if not layer:
             self.current_layer = None
             self.feature_ids = []
+            self.feature_id_to_index = {}
             self.current_index = -1
             self.has_selected_feature = False
             self.disable_navigation()
+            self.update_navigation_slider()
             return
 
         old_feature_ids = list(self.feature_ids)
         old_index = self.current_index
 
         current_fid = None
-        if preserve_position and current_fid in self.feature_id_to_index:
-            self.current_index = self.feature_id_to_index[current_fid]
+        if (
+            preserve_position
+            and self.has_selected_feature
+            and 0 <= self.current_index < len(self.feature_ids)
+        ):
+            current_fid = self.feature_ids[self.current_index]
 
         if self.selected_features_only:
             self.feature_ids = list(self.selected_feature_ids_cache)
@@ -976,7 +1068,9 @@ class FeatureNavigator:
                 .setNoAttributes()
             )
             self.feature_ids = [feature.id() for feature in layer.getFeatures(request)]
-
+            
+        # Feature IDs are used only as a stable in-session navigation order.
+        # Provider FIDs are not guaranteed to be sequential or persistent.
         self.feature_ids.sort()
         self.feature_id_to_index = {
             fid: idx for idx, fid in enumerate(self.feature_ids)
@@ -984,6 +1078,7 @@ class FeatureNavigator:
         num_features = len(self.feature_ids)
 
         if num_features == 0:
+            self.feature_id_to_index = {}
             self.current_index = -1
             self.has_selected_feature = False
             self.dockwidget.selectedFeatureLabel.setVisible(False)
@@ -999,10 +1094,13 @@ class FeatureNavigator:
 
             self.disable_navigation()
             self.dockwidget.mMapLayerComboBox.setEnabled(True)
+            self.update_navigation_slider()
             return
 
-        if preserve_position and current_fid in self.feature_id_to_index:
+        elif preserve_position and current_fid in self.feature_id_to_index:
             self.current_index = self.feature_id_to_index[current_fid]
+            self.has_selected_feature = True
+
         elif deleted_fid is not None and old_feature_ids:
             deleted_index = old_feature_ids.index(deleted_fid) if deleted_fid in old_feature_ids else old_index
 
@@ -1105,6 +1203,22 @@ class FeatureNavigator:
                 self.clear_plugin_state()
         except RuntimeError:
             self.clear_plugin_state()
+    
+    def ensure_current_layer_visible_with_notification(self):
+        """Ensure the current layer is visible and notify the user if visibility changed."""
+        layer = self.safe_current_layer()
+        if layer is None:
+            return False
+
+        visibility_changed = self.ensure_layer_visible(layer)
+
+        if visibility_changed:
+            self.iface.messageBar().pushInfo(
+                "Feature Navigator",
+                f"{layer.name()} layer visibility has been toggled on"
+            )
+
+        return visibility_changed
 
     def clear_plugin_state(self):
         """Clear plugin state safely when project/layers are removed."""
@@ -1129,9 +1243,17 @@ class FeatureNavigator:
             self.dockwidget.selectedFeatureLabel.setVisible(False)
             self.dockwidget.selectedFeatureLabel.setText("")
             self.dockwidget.errorLabel.setVisible(False)
-            self.clear_combo_layer_selection()
+
+            self.suppress_layer_change = True
+            try:
+                self.dockwidget.mMapLayerComboBox.setLayer(None)
+            finally:
+                self.suppress_layer_change = False
+
+            self.user_has_selected_layer = False
             self.dockwidget.mMapLayerComboBox.setEnabled(True)
             self.disable_navigation()
-        
+            self.update_navigation_slider()
+                
 
 

@@ -86,7 +86,7 @@ class FeatureNavigatorDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         return window_colour.lightness() < 128
     
     def _configure_labels(self):
-        """Ensure important labels remain readable on the light green background."""
+        """Ensure important labels remain readable on the light plugin background."""
 
         label_style = """
             QLabel {
@@ -98,13 +98,13 @@ class FeatureNavigatorDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         for label_name in (
             "centrallabel",
             "errorLabel",
-            "selectedFeatureLabel"
+            "selectedFeatureLabel",
         ):
             label = getattr(self, label_name, None)
 
             if isinstance(label, QtWidgets.QLabel):
-                label.setStyleSheet(label_style)
-     
+                label.setStyleSheet(label_style)   
+                
     @staticmethod
     def _round_icon_button_stylesheet(button_object_name, is_dark):
         """Return circular button styling for light and dark QGIS themes."""

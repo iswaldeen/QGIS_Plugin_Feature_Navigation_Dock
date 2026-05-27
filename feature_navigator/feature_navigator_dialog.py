@@ -23,9 +23,9 @@
 """
 
 import os
-import webbrowser
-
 from qgis.PyQt import QtGui, QtWidgets, uic
+from qgis.PyQt.QtCore import QUrl
+from qgis.PyQt.QtGui import QDesktopServices
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -70,26 +70,27 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
 
 
     def _configure_labels(self):
-        """Keep text readable on the light green settings dialog background."""
+        """Ensure labels and checkboxes remain readable on the light plugin background."""
 
         label_style = """
-            color: #000000;
-            background: transparent;
+            QLabel {
+                color: #000000;
+                background: transparent;
+            }
         """
 
-        # QLabel text
+        checkbox_style = """
+            QCheckBox {
+                color: #000000;
+            }
+        """
+
         for label in self.findChildren(QtWidgets.QLabel):
             label.setStyleSheet(label_style)
 
-        # QCheckBox text
         for checkbox in self.findChildren(QtWidgets.QCheckBox):
-            checkbox.setStyleSheet("""
-                QCheckBox {
-                    color: #000000;
-                }
-            """)
-
-
+            checkbox.setStyleSheet(checkbox_style)
+                
     @staticmethod
     def _is_dark_ui():
         """
@@ -142,7 +143,7 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         
     def open_help(self):
-        """Open the Feature Navigator help file."""
+        """Open the Feature Navigator help file in the user's default browser."""
 
         help_path = os.path.join(
             os.path.dirname(__file__),
@@ -150,4 +151,12 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
             "help.html"
         )
 
-        webbrowser.open("file://" + os.path.realpath(help_path))
+        if not os.path.exists(help_path):
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Feature Navigator",
+                "The help document could not be found."
+            )
+            return
+
+        QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.realpath(help_path)))
