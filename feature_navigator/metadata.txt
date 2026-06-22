@@ -9,7 +9,7 @@ qgisMaximumVersion=4.99
 supportsQt6=True
 
 description=This plugin allows the user to navigate through features within a selected vector layer.
-version=1.3
+version=1.31
 author=Isaac Thompson
 email=iswaldeen@outlook.com
 
@@ -23,7 +23,10 @@ repository=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=<strong>1.3</strong>
+changelog=<strong>1.31</strong>
+ - Updated settings dialog UI
+
+ <p><strong>1.3</strong>
  - Navigation slider now enabled by default
  - Prevented automatic layer selection during project loading
  - Improved signal, layer removal, and plugin cleanup handling

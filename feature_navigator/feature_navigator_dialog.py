@@ -38,9 +38,11 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
         super(FeatureNavigatorSettingsDialog, self).__init__(parent)
 
         self.setupUi(self)
+        # Ensure the settings dialog opens at its intended size
+        self.resize(560, 620)
 
         self._configure_help_button()
-        self._configure_labels()
+        self._configure_dialog_widgets()
 
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -69,27 +71,24 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
         )
 
 
-    def _configure_labels(self):
-        """Ensure labels and checkboxes remain readable on the light plugin background."""
+    def _configure_dialog_widgets(self):
+        """Apply runtime-only widget settings that should not live in the .ui file."""
+        widget_tooltips = {
+            "selectedfeaturescheckBox": "Navigate only through currently selected features in the active layer.",
+            "spacebarcheckBox": "Allow the space bar to pause and resume autoplay.",
+            "loopcheckBox": "Restart playback automatically after the final feature.",
+            "navcheckBox": "Show or hide the navigation slider in the main plugin dialog.",
+            "speedSpinBox": "Number of seconds between features during autoplay.",
+            "bufferSpinBox": "Additional map extent, in metres, around the feature when zooming.",
+        }
 
-        label_style = """
-            QLabel {
-                color: #000000;
-                background: transparent;
-            }
-        """
+        for object_name, tooltip in widget_tooltips.items():
+            widget = self.findChild(QtWidgets.QWidget, object_name)
+            if widget is None:
+                continue
 
-        checkbox_style = """
-            QCheckBox {
-                color: #000000;
-            }
-        """
-
-        for label in self.findChildren(QtWidgets.QLabel):
-            label.setStyleSheet(label_style)
-
-        for checkbox in self.findChildren(QtWidgets.QCheckBox):
-            checkbox.setStyleSheet(checkbox_style)
+            widget.setToolTip(tooltip)
+            widget.setAccessibleName(tooltip)
                 
     @staticmethod
     def _is_dark_ui():
@@ -119,10 +118,11 @@ class FeatureNavigatorSettingsDialog(QtWidgets.QDialog, FORM_CLASS):
             pressed = "#4d4d4d"
             border = "#3a3a3a"
         else:
-            background = "#f4f4f4"
-            hover = "#e6e6e6"
-            pressed = "#d6d6d6"
-            border = "#b8b8b8"
+            # Soft green theme to match the plugin styling
+            background = "#f7fbf7"
+            hover = "#e5f3e5"
+            pressed = "#cfe7cf"
+            border = "#b8d8bd"
 
         return f"""
             QPushButton#{button_object_name} {{
