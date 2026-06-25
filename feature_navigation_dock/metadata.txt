@@ -14,8 +14,8 @@ email=iswaldeen@outlook.com
 
 about=Feature Navigation Dock is a plugin for navigating through features in vector layers using manual controls, autoplay, selected-feature mode, and optional slider-based tools.
 
-tracker=https://github.com/iswaldeen/QGIS_Plugin_feature_navigation_dock/issues
-repository=https://github.com/iswaldeen/QGIS_Plugin_feature_navigation_dock
+tracker=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigation_Dock/issues
+repository=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigation_Dock
 # End of mandatory metadata
 
 # Recommended items:
@@ -98,7 +98,7 @@ changelog=<strong>1.4</strong>
 # Tags are comma separated with spaces allowed
 tags=python, feature, search, select, navigator
 
-homepage=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigation Dock
+homepage=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigation_Dock
 category=Plugins
 icon=icons/feature_navigation_dock_icon.png
 # experimental flag
