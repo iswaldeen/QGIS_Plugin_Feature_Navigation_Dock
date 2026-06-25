@@ -3,26 +3,29 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=Feature Navigator
+name=Feature Navigation Dock
 qgisMinimumVersion=3.0
 qgisMaximumVersion=4.99
 
 description=This plugin allows the user to navigate through features within a selected vector layer.
-version=1.32
+version=1.4
 author=Isaac Thompson
 email=iswaldeen@outlook.com
 
-about=Feature Navigator is a plugin for navigating through features in vector layers using manual controls, autoplay, selected-feature mode, and optional slider-based tools.
+about=Feature Navigation Dock is a plugin for navigating through features in vector layers using manual controls, autoplay, selected-feature mode, and optional slider-based tools.
 
-tracker=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator/issues
-repository=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator
+tracker=https://github.com/iswaldeen/QGIS_Plugin_feature_navigation_dock/issues
+repository=https://github.com/iswaldeen/QGIS_Plugin_feature_navigation_dock
 # End of mandatory metadata
 
 # Recommended items:
 
 hasProcessingProvider=no
 # Uncomment the following line and add your changelog:
-changelog=<strong>1.32</strong>
+changelog=<strong>1.4</strong>
+ - Name revamp and corrections
+
+ <p><strong>1.32</strong>
  - Fixed behaviour preventing navigation restart on layer edit
 
  <p><strong>1.31</strong>
@@ -44,8 +47,8 @@ changelog=<strong>1.32</strong>
  - UI improvements, stability improvements, and bug fixes
 
  <p><strong>1.2</strong>
- - Added Settings menu entry to Plugins > Feature Navigator
- - Added Help menu entry to Plugins > Feature Navigator
+ - Added Settings menu entry to Plugins > Feature Navigation Dock
+ - Added Help menu entry to Plugins > Feature Navigation Dock
  - Added automatic dark/light mode menu icon support
 
  <p><strong>1.11</strong>
@@ -90,14 +93,14 @@ changelog=<strong>1.32</strong>
  - Additional bug fixes
 
  <p><strong>1.00</strong>
- - First release of Feature Navigator Plugin
+ - First release of Feature Navigation Dock Plugin
 
 # Tags are comma separated with spaces allowed
 tags=python, feature, search, select, navigator
 
-homepage=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigator
+homepage=https://github.com/iswaldeen/QGIS_Plugin_Feature_Navigation Dock
 category=Plugins
-icon=icons/feature_navigator_icon.png
+icon=icons/feature_navigation_dock_icon.png
 # experimental flag
 experimental=False
 

@@ -1,10 +1,10 @@
-# QGIS Plugin - Feature Navigator
+# QGIS Plugin - Feature Navigation Dock
 
-Feature Navigator is a QGIS plugin for efficiently moving through features in vector layers using manual controls, autoplay, selected-feature mode, and optional slider-based tools.
+Feature Navigation Dock is a QGIS plugin for efficiently moving through features in vector layers using manual controls, autoplay, selected-feature mode, and optional slider-based tools.
 
-Feature Navigator is designed for compatibility with modern QGIS versions and includes forward-compatible support for Qt6 and upcoming QGIS 4.x environments.
+Feature Navigation Dock is designed for compatibility with modern QGIS versions and includes forward-compatible support for Qt6 and upcoming QGIS 4.x environments.
 
-<img src="feature_navigator/icons/feature_navigator_icon.png" width="100" height="100">
+<img src="feature_navigation_dock/icons/feature_navigation_dock_icon.png" width="100" height="100">
 
 ## Features
 
@@ -34,7 +34,7 @@ Feature Navigator is designed for compatibility with modern QGIS versions and in
 
 ## Compatibility
 
-Feature Navigator is actively developed and tested for:
+Feature Navigation Dock is actively developed and tested for:
 
 * QGIS 3.28+
 * PyQt5 / Qt5

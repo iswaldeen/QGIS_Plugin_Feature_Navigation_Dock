@@ -1,6 +1,6 @@
 <RCC>
-    <qresource prefix="/plugins/feature_navigator" >
-        <file>icons/feature_navigator_icon.png</file>
+    <qresource prefix="/plugins/feature_navigation_dock" >
+        <file>icons/feature_navigation_dock_icon.png</file>
 		<file>icons/settings.png</file>
 		<file>icons/question_mark.png</file>
 		<file>icons/settings_darkmode.png</file>
