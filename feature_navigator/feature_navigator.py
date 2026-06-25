@@ -1108,6 +1108,8 @@ class FeatureNavigator:
                 self.current_index = len(self.feature_ids) - 1
             else:
                 self.current_index = deleted_index
+
+            self.has_selected_feature = True
         else:
             if not preserve_position:
                 self.current_index = -1
@@ -1158,13 +1160,21 @@ class FeatureNavigator:
         if self.ignore_selection_change:
             return
 
+        # Keep selected-feature-only mode clean if the deleted feature was selected.
+        if fid in self.selected_feature_ids_cache:
+            self.selected_feature_ids_cache.remove(fid)
+
         self.refresh_feature_list(preserve_position=True, deleted_fid=fid)
 
         # Do not auto-select or auto-zoom after deletion.
-        # Leave the canvas/view where it is, and wait for the user's next input.
-        self.has_selected_feature = False
-
-        if self.dockwidget:
+        # Keep the current index so the next/previous click continues from the
+        # deleted feature's former position instead of restarting navigation.
+        if self.current_index >= 0 and self.feature_ids:
+            self.has_selected_feature = True
+            self.dockwidget.selectedFeatureLabel.setVisible(True)
+            self.update_selected_feature_label()
+        else:
+            self.has_selected_feature = False
             self.dockwidget.selectedFeatureLabel.setVisible(False)
             self.dockwidget.selectedFeatureLabel.setText("")
     
